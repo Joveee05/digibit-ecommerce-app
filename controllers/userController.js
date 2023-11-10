@@ -69,7 +69,7 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-exports.updateUser = catchAsync(async (req, res, next) => {
+exports.updateUser = asyncHandler(async (req, res, next) => {
   const user = await User.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -83,4 +83,32 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     message: 'user update successful',
     data: user,
   });
+});
+
+exports.blockUser = asyncHandler(async (req, res) => {
+  const id = req.params.id;
+  try {
+    const block = await User.findByIdAndUpdate(
+      id,
+      { isBlocked: true },
+      { new: true }
+    );
+    res.status(200).json({ message: 'User blocked' });
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+exports.unblockUser = asyncHandler(async (req, res) => {
+  const id = req.params.id;
+  try {
+    const block = await User.findByIdAndUpdate(
+      id,
+      { isBlocked: false },
+      { new: true }
+    );
+    res.status(200).json({ message: 'User unblocked' });
+  } catch (error) {
+    throw new Error(error);
+  }
 });
