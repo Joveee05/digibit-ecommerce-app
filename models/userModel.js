@@ -20,11 +20,31 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'user',
     },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
     mobile: {
       type: String,
       required: true,
       unique: true,
     },
+    cart: {
+      type: Array,
+      default: [],
+    },
+    address: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Address',
+      },
+    ],
+    wishList: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Product',
+      },
+    ],
     password: {
       type: String,
       required: true,
@@ -37,6 +57,7 @@ const userSchema = new mongoose.Schema(
       },
     },
     versionKey: false,
+    timestamps: true,
   }
 );
 
