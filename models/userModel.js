@@ -45,6 +45,9 @@ const userSchema = new mongoose.Schema(
         ref: 'Product',
       },
     ],
+    refreshToken: {
+      type: String,
+    },
     password: {
       type: String,
       required: true,
