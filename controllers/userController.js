@@ -1,6 +1,9 @@
+const { sendAccessToken } = require('../config/refreshToken');
 const { signToken } = require('../config/jsonwebtoken');
 const User = require('../models/userModel');
 const asyncHandler = require('express-async-handler');
+const { validateId } = require('../utils/validateId');
+const jwt = require('jsonwebtoken');
 
 exports.createUser = asyncHandler(async (req, res) => {
   const email = req.body.email;
@@ -20,6 +23,7 @@ exports.logIn = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const findUser = await User.findOne({ email });
   if (findUser && (await findUser.isPasswordCorrect(password))) {
+    await sendAccessToken(findUser, res);
     res.json({
       message: 'Logged in successfully',
       token: signToken(findUser?.id),
@@ -45,7 +49,9 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
 });
 
 exports.getUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
+  const id = req.params.id;
+  validateId(id);
+  const user = await User.findById(id);
   if (!user) {
     throw new Error('No user found with this ID');
   }
@@ -57,7 +63,9 @@ exports.getUser = asyncHandler(async (req, res) => {
 });
 
 exports.deleteUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const id = req.params.id;
+  validateId(id);
+  const user = await User.findByIdAndDelete(id);
 
   if (!user) {
     throw new Error('No user found with this ID');
@@ -70,7 +78,9 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 });
 
 exports.updateUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+  const id = req.params.id;
+  validateId(id);
+  const user = await User.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   });
@@ -87,6 +97,7 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
 
 exports.blockUser = asyncHandler(async (req, res) => {
   const id = req.params.id;
+  validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
       id,
@@ -101,6 +112,7 @@ exports.blockUser = asyncHandler(async (req, res) => {
 
 exports.unblockUser = asyncHandler(async (req, res) => {
   const id = req.params.id;
+  validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
       id,
@@ -111,4 +123,19 @@ exports.unblockUser = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new Error(error);
   }
+});
+
+exports.handleRefreshToken = asyncHandler(async (req, res) => {
+  const cookie = req.cookies;
+  if (!cookie.refreshToken) throw new Error('No refresh Token in cookies');
+  const refreshToken = cookie.refreshToken;
+  const user = await User.findOne({ refreshToken });
+  if (!user) throw new Error('No refresh token in database');
+  jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
+    if (err || user.id !== decoded.id) {
+      throw new Error('Something went wrong with refresh token');
+    }
+    const accessToken = signToken(user.id);
+    res.json({ accessToken });
+  });
 });
