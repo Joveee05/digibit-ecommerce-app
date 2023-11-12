@@ -11,6 +11,8 @@ router.use(auth.protect);
 
 router.get('/all_users', userController.getAllUsers);
 
+router.get('/refresh', userController.handleRefreshToken);
+
 router.get('/:id', userController.getUser);
 
 router.patch('/:id', userController.updateUser);
