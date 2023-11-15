@@ -23,3 +23,22 @@ exports.sendAccessToken = async (user, res) => {
   if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
   res.cookie('refreshToken', refreshToken, cookieOptions);
 };
+
+exports.clearToken = async (req) => {
+  const cookie = req.cookies;
+  if (!cookie.refreshToken) throw new Error('No refresh Token in cookies');
+  const refreshToken = cookie.refreshToken;
+  const user = await User.findOne({ refreshToken });
+  if (!user) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+    });
+  }
+  const updateUser = await User.findOneAndUpdate(
+    { refreshToken },
+    {
+      refreshToken: '',
+    }
+  );
+};
