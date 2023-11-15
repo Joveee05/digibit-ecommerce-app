@@ -1,4 +1,4 @@
-const { sendAccessToken } = require('../config/refreshToken');
+const { sendAccessToken, clearToken } = require('../config/refreshToken');
 const { signToken } = require('../config/jsonwebtoken');
 const User = require('../models/userModel');
 const asyncHandler = require('express-async-handler');
@@ -137,5 +137,18 @@ exports.handleRefreshToken = asyncHandler(async (req, res) => {
     }
     const accessToken = signToken(user.id);
     res.json({ accessToken });
+  });
+});
+
+exports.logOut = asyncHandler(async (req, res) => {
+  await clearToken(req);
+  res.clearCookie('refreshToken', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+
+  res.status(200).json({
+    status: 'success',
+    message: 'You have been logged out successfully',
   });
 });
