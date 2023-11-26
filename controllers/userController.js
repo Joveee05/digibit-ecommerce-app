@@ -42,14 +42,14 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
   }
   res.status(200).json({
     status: 'success',
-    message: `${allUsers.length} users found in the database`,
+    message: `${allUsers.length} user(s) found in the database`,
     allUsers: allUsers.length,
     data: allUsers,
   });
 });
 
 exports.getUser = asyncHandler(async (req, res) => {
-  const id = req.params.id;
+  const { id } = req.user;
   validateId(id);
   const user = await User.findById(id);
   if (!user) {
@@ -63,7 +63,7 @@ exports.getUser = asyncHandler(async (req, res) => {
 });
 
 exports.deleteUser = asyncHandler(async (req, res, next) => {
-  const id = req.params.id;
+  const { id } = req.user;
   validateId(id);
   const user = await User.findByIdAndDelete(id);
 
@@ -78,7 +78,7 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 });
 
 exports.updateUser = asyncHandler(async (req, res, next) => {
-  const id = req.params.id;
+  const { id } = req.user;
   validateId(id);
   const user = await User.findByIdAndUpdate(id, req.body, {
     new: true,
@@ -96,7 +96,7 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
 });
 
 exports.blockUser = asyncHandler(async (req, res) => {
-  const id = req.params.id;
+  const { id } = req.user;
   validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
@@ -111,7 +111,7 @@ exports.blockUser = asyncHandler(async (req, res) => {
 });
 
 exports.unblockUser = asyncHandler(async (req, res) => {
-  const id = req.params.id;
+  const { id } = req.user;
   validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
@@ -151,4 +151,21 @@ exports.logOut = asyncHandler(async (req, res) => {
     status: 'success',
     message: 'You have been logged out successfully',
   });
+});
+
+exports.updatePassword = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const password = req.body.password;
+  await validateId(_id);
+  const user = await User.findById(_id);
+  if (password) {
+    user.password = password;
+    const userPassword = await user.save();
+    res.status(200).json({
+      status: 'success',
+      data: userPassword,
+    });
+  } else {
+    res.json(user);
+  }
 });
