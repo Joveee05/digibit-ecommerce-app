@@ -2,7 +2,7 @@ const Product = require('../models/productModel');
 const asyncHandler = require('express-async-handler');
 const { validateId } = require('../utils/validateId');
 const slugify = require('slugify');
-const APIFeatures = require('../utils/apiFeatures');
+const { APIFeatures } = require('../utils/apiFeatures');
 
 exports.createProduct = asyncHandler(async (req, res) => {
   try {
@@ -20,18 +20,8 @@ exports.createProduct = asyncHandler(async (req, res) => {
 });
 
 exports.getAllProducts = asyncHandler(async (req, res) => {
-  const queryObj = { ...req.query };
-  const excludedFields = ['page', 'sort', 'limit', 'fields'];
-  excludedFields.forEach((el) => delete queryObj[el]);
-  let queryStr = JSON.stringify(queryObj);
-  queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+  const product = await APIFeatures(req);
 
-  const query = Product.find(JSON.parse(queryStr));
-  const product = await query;
-
-  if (product.length < 1) {
-    throw new Error('No Products found in the database.');
-  }
   res.status(200).json({
     status: 'success',
     data: product,
