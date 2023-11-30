@@ -5,6 +5,10 @@ const auth = require('../middlewares/auth');
 
 router.post('/register', userController.createUser);
 
+router.post('/forgot-password', userController.forgotPassword);
+
+router.post('/reset-password/:token', userController.resetPassword);
+
 router.get('/logout', userController.logOut);
 
 router.post('/login', userController.logIn);
@@ -15,7 +19,7 @@ router.get('/all_users', userController.getAllUsers);
 
 router.get('/refresh', userController.handleRefreshToken);
 
-router.patch('/reset-password', userController.updatePassword);
+router.patch('/password', userController.updatePassword);
 
 router.patch('/block-user/:id', auth.isAdmin, userController.blockUser);
 
