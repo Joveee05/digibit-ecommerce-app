@@ -4,6 +4,7 @@ const app = express();
 const dotenv = require('dotenv').config();
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const authRouter = require('./routes/authRoutes');
+const blogRouter = require('./routes/blogRoutes');
 const productRouter = require('./routes/productRoutes');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
@@ -18,6 +19,7 @@ app.use(cookieParser());
 
 app.use('/api/users', authRouter);
 app.use('/api/products', productRouter);
+app.use('/api/blogs', blogRouter);
 
 app.use(notFound);
 app.use(errorHandler);
