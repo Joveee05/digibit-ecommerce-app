@@ -2,8 +2,10 @@ const { sendAccessToken, clearToken } = require('../config/refreshToken');
 const { signToken } = require('../config/jsonwebtoken');
 const User = require('../models/userModel');
 const asyncHandler = require('express-async-handler');
+const crypto = require('crypto');
 const { validateId } = require('../utils/validateId');
 const jwt = require('jsonwebtoken');
+const { sendEmail } = require('./emailCtrl');
 
 exports.createUser = asyncHandler(async (req, res) => {
   const email = req.body.email;
@@ -50,7 +52,7 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
 
 exports.getUser = asyncHandler(async (req, res) => {
   const { id } = req.user;
-  validateId(id);
+  await validateId(id);
   const user = await User.findById(id);
   if (!user) {
     throw new Error('No user found with this ID');
@@ -64,7 +66,7 @@ exports.getUser = asyncHandler(async (req, res) => {
 
 exports.deleteUser = asyncHandler(async (req, res, next) => {
   const { id } = req.user;
-  validateId(id);
+  await validateId(id);
   const user = await User.findByIdAndDelete(id);
 
   if (!user) {
@@ -79,7 +81,7 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 
 exports.updateUser = asyncHandler(async (req, res, next) => {
   const { id } = req.user;
-  validateId(id);
+  await validateId(id);
   const user = await User.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
@@ -97,7 +99,7 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
 
 exports.blockUser = asyncHandler(async (req, res) => {
   const { id } = req.user;
-  validateId(id);
+  await validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
       id,
@@ -112,7 +114,7 @@ exports.blockUser = asyncHandler(async (req, res) => {
 
 exports.unblockUser = asyncHandler(async (req, res) => {
   const { id } = req.user;
-  validateId(id);
+  await validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
       id,
@@ -168,4 +170,52 @@ exports.updatePassword = asyncHandler(async (req, res) => {
   } else {
     res.json(user);
   }
+});
+
+exports.forgotPassword = asyncHandler(async (req, res) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    throw new Error('No user found with that email address');
+  }
+  try {
+    const resetToken = await user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+    const resetURL = `Hi, please reset your password with the link. Valid for 10mins. <a href='http://localhost:4000/api/users/reset-password/${resetToken}'>Click Here</>`;
+    const data = {
+      to: user.email,
+      subject: 'Reset Password',
+      html: resetURL,
+    };
+    await sendEmail(data);
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset token sent to your email',
+    });
+  } catch (err) {
+    throw new Error(err);
+  }
+});
+
+exports.resetPassword = asyncHandler(async (req, res) => {
+  const token = req.params.token;
+  const password = req.body.password;
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new Error('Token is invalid or has expired.');
+  }
+  user.password = password;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: user,
+  });
 });
